@@ -1,7 +1,9 @@
+import { registerRootComponent } from 'expo';
 import { StatusBar } from 'expo-status-bar';
+import React from 'react';
 import App from './src/App';
 
-export default function RootApp() {
+function RootApp() {
   return (
     <>
       <App />
@@ -9,3 +11,5 @@ export default function RootApp() {
     </>
   );
 }
+
+registerRootComponent(RootApp);

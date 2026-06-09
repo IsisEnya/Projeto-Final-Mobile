@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { AuthContextType, LoginData, SignUpData, User } from '../types';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { AuthContextType, SignUpData, User } from '../types';
 import { authService } from '../services/authService';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -8,6 +8,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      const currentUser = await authService.getCurrentUser();
+      setUser(currentUser);
+    };
+
+    loadCurrentUser();
+  }, []);
 
   const clearError = useCallback(() => {
     setError(null);

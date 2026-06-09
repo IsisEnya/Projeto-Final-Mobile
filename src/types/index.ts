@@ -16,12 +16,26 @@ export interface User {
   createdAt: string;
 }
 
-export type SwimmingStyle = 
-  | 'freestyle' 
-  | 'backstroke' 
-  | 'breaststroke' 
-  | 'butterfly' 
+export type SwimmingStyle =
+  | 'freestyle'
+  | 'backstroke'
+  | 'breaststroke'
+  | 'butterfly'
   | 'individual-medley';
+
+export type WorkoutPlaceType = 'pool' | 'open-water';
+
+export interface WorkoutRecord {
+  id: string;
+  userId: string;
+  trainedAt: string;
+  placeName: string;
+  placeType: WorkoutPlaceType;
+  swimmingStyle: SwimmingStyle;
+  laps: number;
+  poolLength: number;
+  totalDistance: number;
+}
 
 export interface SignUpData {
   email: string;
@@ -56,6 +70,7 @@ export interface AuthContextType {
 }
 
 export const SWIMMING_ACADEMIES = [
+  'Não sou afiliado',
   'Academia Natação Olímpica',
   'Centro de Treinamento Aquático',
   'Escola de Natação Infantil',
