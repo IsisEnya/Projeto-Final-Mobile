@@ -1,14 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SignUpData, User } from '../types';
-import { validateEmail, validateCPF } from '../utils/validators';
+import {
+  SignUpData,
+  SWIMMING_MODALITIES,
+  SwimmingModality,
+  TRAINING_PLACE_OPTIONS,
+  User,
+} from '../types';
+import { validateEmail } from '../utils/validators';
 
 class AuthService {
   private readonly USERS_KEY = 'users_data';
   private readonly CURRENT_USER_KEY = 'current_user';
 
   async login(email: string, password: string): Promise<User> {
-    // Simula uma chamada à API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
     if (!email || !password) {
       throw new Error('Email e senha são obrigatórios');
@@ -26,16 +31,10 @@ class AuthService {
   }
 
   async signUp(data: SignUpData): Promise<User> {
-    // Simula uma chamada à API
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
-    // Validações
     if (!validateEmail(data.email)) {
       throw new Error('Email inválido');
-    }
-
-    if (!validateCPF(data.cpf)) {
-      throw new Error('CPF inválido');
     }
 
     if (data.password !== data.confirmPassword) {
@@ -46,52 +45,99 @@ class AuthService {
       throw new Error('Senha deve ter pelo menos 6 caracteres');
     }
 
-    if (!data.firstName || !data.lastName) {
-      throw new Error('Nome e sobrenome são obrigatórios');
+    if (data.accountType === 'student') {
+      if (!data.firstName || !data.lastName) {
+        throw new Error('Nome e sobrenome são obrigatórios');
+      }
+
+      if (!data.trainingPlace) {
+        throw new Error('Informe onde você treina');
+      }
+
+      if (!data.primaryModality) {
+        throw new Error('Selecione sua modalidade principal');
+      }
+
+      if (!data.modalities || data.modalities.length === 0) {
+        throw new Error('Selecione pelo menos uma modalidade');
+      }
     }
 
-    if (!data.dateOfBirth || !data.phone || !data.address) {
-      throw new Error('Todos os campos pessoais são obrigatórios');
+    if (data.accountType === 'academy') {
+      if (!data.academyName || !data.city || !data.state) {
+        throw new Error('Informe nome, cidade e estado da academia');
+      }
     }
 
-    if (!data.swimmingAcademy) {
-      throw new Error('Selecione uma academia de natação');
-    }
-
-    if (data.swimmingStyles.length === 0) {
-      throw new Error('Selecione pelo menos um estilo de nado');
-    }
-
-    // Verifica se o email já existe
     const users = await this.getStoredUsers();
     if (users.some((u) => u.email === data.email)) {
       throw new Error('Email já cadastrado');
     }
 
-    const newUser: User = {
-      id: Date.now().toString(),
-      email: data.email,
-      password: data.password,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      dateOfBirth: data.dateOfBirth,
-      cpf: data.cpf,
-      phone: data.phone,
-      address: data.address,
-      city: data.city,
-      state: data.state,
-      postalCode: data.postalCode,
-      swimmingAcademy: data.swimmingAcademy,
-      swimmingStyles: data.swimmingStyles,
-      createdAt: new Date().toISOString(),
-    };
+    const newUser: User =
+      data.accountType === 'academy'
+        ? {
+            id: Date.now().toString(),
+            accountType: 'academy',
+            email: data.email,
+            password: data.password,
+            academyProfile: {
+              id: `academy-${Date.now()}`,
+              name: data.academyName ?? '',
+              city: data.city ?? '',
+              state: data.state ?? '',
+              address: data.address,
+              site: data.site,
+              instagram: data.instagram,
+              teachers: [],
+              studentIds: [],
+              poolIds: [],
+            },
+            createdAt: new Date().toISOString(),
+          }
+        : {
+            id: Date.now().toString(),
+            accountType: 'student',
+            email: data.email,
+            password: data.password,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            trainingPlace: data.trainingPlace,
+            primaryModality: data.primaryModality,
+            modalities: data.modalities,
+            createdAt: new Date().toISOString(),
+          };
 
-    // Salva o novo usuário
     const updatedUsers = [...users, newUser];
     await AsyncStorage.setItem(this.USERS_KEY, JSON.stringify(updatedUsers));
     await AsyncStorage.setItem(this.CURRENT_USER_KEY, JSON.stringify(newUser));
 
     return newUser;
+  }
+
+  async updateCurrentUser(data: Partial<User>): Promise<User> {
+    const currentUser = await this.getCurrentUser();
+
+    if (!currentUser) {
+      throw new Error('Nenhum usuário logado');
+    }
+
+    const updatedUser = this.normalizeUser({
+      ...currentUser,
+      ...data,
+      academyProfile: {
+        ...currentUser.academyProfile,
+        ...data.academyProfile,
+      } as User['academyProfile'],
+    });
+
+    const users = await this.getStoredUsers();
+    const updatedUsers = users.map((user) => (user.id === updatedUser.id ? updatedUser : user));
+
+    await AsyncStorage.setItem(this.USERS_KEY, JSON.stringify(updatedUsers));
+    await AsyncStorage.setItem(this.CURRENT_USER_KEY, JSON.stringify(updatedUser));
+
+    return updatedUser;
   }
 
   async logout(): Promise<void> {
@@ -100,12 +146,70 @@ class AuthService {
 
   async getCurrentUser(): Promise<User | null> {
     const userJson = await AsyncStorage.getItem(this.CURRENT_USER_KEY);
-    return userJson ? JSON.parse(userJson) : null;
+    return userJson ? this.normalizeUser(JSON.parse(userJson)) : null;
   }
 
   private async getStoredUsers(): Promise<User[]> {
     const usersJson = await AsyncStorage.getItem(this.USERS_KEY);
-    return usersJson ? JSON.parse(usersJson) : [];
+    const users = usersJson ? JSON.parse(usersJson) : [];
+    return users.map((user: Partial<User>) => this.normalizeUser(user));
+  }
+
+  private normalizeUser(user: Partial<User>): User {
+    if (user.accountType === 'academy' || user.academyProfile) {
+      return {
+        id: user.id ?? Date.now().toString(),
+        accountType: 'academy',
+        email: user.email ?? '',
+        password: user.password ?? '',
+        academyProfile: {
+          id: user.academyProfile?.id ?? `academy-${user.id ?? Date.now()}`,
+          name: user.academyProfile?.name ?? 'Academia',
+          city: user.academyProfile?.city ?? '',
+          state: user.academyProfile?.state ?? '',
+          address: user.academyProfile?.address,
+          site: user.academyProfile?.site,
+          instagram: user.academyProfile?.instagram,
+          teachers: user.academyProfile?.teachers ?? [],
+          studentIds: user.academyProfile?.studentIds ?? [],
+          poolIds: user.academyProfile?.poolIds ?? [],
+        },
+        createdAt: user.createdAt ?? new Date().toISOString(),
+      };
+    }
+
+    const validModalities = SWIMMING_MODALITIES.map((modality) => modality.value);
+    const legacyModalities = Array.isArray((user as any).swimmingStyles)
+      ? ((user as any).swimmingStyles as string[])
+      : [];
+    const rawModalities = Array.isArray(user.modalities) ? user.modalities : legacyModalities;
+    const modalities = rawModalities.filter((modality): modality is SwimmingModality =>
+      validModalities.includes(modality as SwimmingModality)
+    );
+    const trainingPlace = user.trainingPlace ?? (user as any).swimmingAcademy;
+    const validTrainingPlace = TRAINING_PLACE_OPTIONS.includes(trainingPlace ?? '');
+
+    return {
+      id: user.id ?? Date.now().toString(),
+      accountType: 'student',
+      email: user.email ?? '',
+      password: user.password ?? '',
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
+      trainingPlace: validTrainingPlace ? trainingPlace! : 'Treino sozinho',
+      primaryModality: user.primaryModality ?? modalities[0] ?? 'recreational-pool',
+      modalities: modalities.length > 0 ? modalities : ['recreational-pool'],
+      city: user.city,
+      state: user.state,
+      profilePhoto: user.profilePhoto,
+      academyId: user.academyId,
+      academyName: user.academyName,
+      favoriteStrokes: user.favoriteStrokes,
+      yearsPracticing: user.yearsPracticing,
+      weeklyFrequency: user.weeklyFrequency,
+      practicePeriod: user.practicePeriod,
+      createdAt: user.createdAt ?? new Date().toISOString(),
+    };
   }
 }
 

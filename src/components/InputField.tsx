@@ -42,7 +42,7 @@ export const InputField: React.FC<InputFieldProps> = ({
         editable={editable}
         multiline={multiline}
         numberOfLines={numberOfLines}
-        placeholderTextColor="#999"
+        placeholderTextColor="#9ab0c2"
       />
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
@@ -54,20 +54,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#243047',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderColor: '#e3f2f8',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
     fontSize: 14,
-    color: '#333',
-    backgroundColor: '#fff',
+    color: '#243047',
+    backgroundColor: '#f8fcff',
   },
   inputError: {
     borderColor: '#e74c3c',

@@ -91,18 +91,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#243047',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderColor: '#e3f2f8',
+    borderRadius: 14,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
+    paddingVertical: 13,
+    backgroundColor: '#f8fcff',
   },
   inputError: {
     borderColor: '#e74c3c',
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   inputText: {
     fontSize: 14,
-    color: '#333',
+    color: '#243047',
   },
   placeholderText: {
     color: '#999',
@@ -135,13 +135,13 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '800',
+    color: '#243047',
   },
   closeButton: {
     fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: '#22a9e7',
+    fontWeight: '800',
   },
   option: {
     paddingHorizontal: 16,
@@ -150,14 +150,14 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   optionSelected: {
-    backgroundColor: '#f0f8ff',
+    backgroundColor: '#e9f8ff',
   },
   optionText: {
     fontSize: 14,
-    color: '#333',
+    color: '#243047',
   },
   optionTextSelected: {
-    color: '#007AFF',
-    fontWeight: '600',
+    color: '#1688c9',
+    fontWeight: '800',
   },
 });

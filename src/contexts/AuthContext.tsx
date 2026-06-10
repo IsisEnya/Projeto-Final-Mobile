@@ -52,6 +52,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const updateProfile = useCallback(async (data: Partial<User>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const userData = await authService.updateCurrentUser(data);
+      setUser(userData);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao atualizar perfil';
+      setError(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const logout = useCallback(() => {
     setUser(null);
     setError(null);
@@ -64,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     error,
     login,
     signUp,
+    updateProfile,
     logout,
     clearError,
   };

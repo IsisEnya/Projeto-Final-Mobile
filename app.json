@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Trabalho-final-mobile",
-    "slug": "Trabalho-final-mobile",
+    "name": "Hydro Pump",
+    "slug": "hydro-pump",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "trabalhofinalmobile",
+    "scheme": "hydropump",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"

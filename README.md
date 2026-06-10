@@ -1,161 +1,108 @@
-# SwimApp - Sistema de Autenticação com React Native + Expo
+# Hydro Pump
 
-Um aplicativo completo de autenticação desenvolvido com React Native e Expo, incluindo cadastro de usuários com informações pessoais, afiliação a academia de natação e seleção de estilos de nado.
+Hydro Pump e um aplicativo mobile feito com React Native e Expo para registrar treinos de natacao. A ideia e funcionar como um app de academia, mas focado em nadadores, academias, clubes e professores.
 
-## 🎯 Funcionalidades
+O projeto ainda esta em fase de MVP. A base principal ja permite cadastro, login, registro de treinos, cadastro de piscinas, historico e ranking simples.
 
-- ✅ **Sistema de Autenticação**
-  - Login com validação de email e senha
-  - Cadastro de novo usuário em 3 seções
-  - Armazenamento local de dados
+## Funcionalidades
 
-- 👤 **Informações Pessoais**
-  - Nome, sobrenome e email
-  - Data de nascimento com seletor
-  - CPF com validação de dígito verificador
-  - Telefone com formatação automática
+- Cadastro como aluno ou academia
+- Login com conta local
+- Perfil editavel
+- Cadastro de piscinas
+- Registro de treino com varios exercicios
+- Exercicios em piscina ou aguas abertas
+- Calculo automatico de distancia em piscina
+- Historico de treinos
+- Ranking semanal por distancia
+- Navegacao inferior com abas
 
-- 📍 **Endereço**
-  - Rua, número
-  - Cidade, estado e CEP
-  - Formatação automática de CEP
+## Como funciona o treino
 
-- 🏊 **Informações de Natação**
-  - Seleção de academia (dropdown com 8 opções)
-  - Múltiplos estilos de nado com checkboxes:
-    - Nado Livre
-    - Costas
-    - Peito
-    - Borboleta
-    - Medley Individual
+Um treino e um agrupador com nome, data, tempo total e exercicios.
 
-- 📱 **Tela de Perfil**
-  - Visualização de todos os dados cadastrados
-  - Logout com confirmação
-  - Design responsivo
+Em exercicios de piscina, o app calcula a distancia usando:
 
-## 📋 Requisitos
+```text
+distancia = chegadas x tamanho da piscina x 2
+```
 
-- Node.js (v20 ou superior)
-- npm ou yarn
-- Expo CLI
+Isso acontece porque, neste projeto, uma chegada representa ida e volta na piscina.
 
-## 🚀 Instalação e Uso
+Exemplo:
 
-### 1. Instalar dependências
+```text
+10 chegadas x piscina de 25m x 2 = 500m
+```
+
+## Tecnologias
+
+- React Native
+- Expo
+- TypeScript
+- AsyncStorage
+
+## Requisitos
+
+- Node.js instalado
+- npm instalado
+- Expo Go no celular, caso queira testar no dispositivo fisico
+
+## Como rodar
+
+Instale as dependencias:
 
 ```bash
 npm install
 ```
 
-### 2. Iniciar o projeto
+Inicie o projeto:
 
 ```bash
-npm start
+npm run start
 ```
 
-### 3. Abrir em dispositivo/emulador
+Se precisar limpar o cache do Expo:
 
-- **iOS**: Pressione `i`
-- **Android**: Pressione `a`
-- **Web**: Pressione `w`
-
-## 🔑 Dados de Demonstração
-
-Para testar o login, use:
-
-- **Email**: demo@swimapp.com
-- **Senha**: 123456
-
-> Nota: Crie uma nova conta para testar o cadastro completo
-
-## 📁 Estrutura de Pastas
-
+```bash
+npm run start -- --clear
 ```
+
+Depois que o Expo abrir:
+
+- Pressione `w` para abrir no navegador
+- Escaneie o QR Code com o Expo Go para abrir no celular
+- Pressione `a` para Android/emulador, se estiver configurado
+- Pressione `i` para iOS/simulador, se estiver em macOS
+
+## Contas demo
+
+Aluno:
+
+```text
+Email: demo@hydropump.com
+Senha: 123456
+```
+
+Academia:
+
+```text
+Email: academia@hydropump.com
+Senha: 123456
+```
+
+## Estrutura basica
+
+```text
 src/
-├── components/      # Componentes reutilizáveis
-│   ├── Button.tsx
-│   ├── InputField.tsx
-│   ├── Picker.tsx
-│   └── CheckboxGroup.tsx
-├── contexts/        # React Context para estado global
-│   └── AuthContext.tsx
-├── screens/         # Telas da aplicação
-│   ├── LoginScreen.tsx
-│   ├── SignUpScreen.tsx
-│   └── HomeScreen.tsx
-├── services/        # Serviços de API/lógica
-│   └── authService.ts
-├── types/           # Tipos TypeScript
-│   └── index.ts
-├── utils/           # Funções utilitárias
-│   └── validators.ts
-└── App.tsx          # Componente principal
+  components/   Componentes reutilizaveis
+  contexts/     Contexto de autenticacao
+  screens/      Telas principais
+  services/     Servicos e persistencia local
+  types/        Tipos TypeScript
+  utils/        Funcoes utilitarias
 ```
 
-## 🎨 Componentes Principais
+## Observacao
 
-### InputField
-Campo de entrada reutilizável com suporte a validação, diferentes tipos de teclado e máscara de entrada.
-
-### Button
-Botão versátil com variantes (primary, secondary, danger) e suporte a loading.
-
-### Picker
-Seletor customizado para escolher um item de uma lista (academias de natação).
-
-### CheckboxGroup
-Grupo de checkboxes para seleção múltipla (estilos de nado).
-
-## 🔐 Validações
-
-- ✅ Email válido
-- ✅ CPF com validação de dígito verificador
-- ✅ Senha com mínimo 6 caracteres
-- ✅ Confirmação de senha
-- ✅ Todos os campos obrigatórios
-
-## 💾 Armazenamento de Dados
-
-Os dados são armazenados localmente usando `AsyncStorage`:
-
-- Usuários registrados
-- Usuário atualmente autenticado
-
-> Nota: Este é um projeto de demonstração. Em produção, use um backend seguro.
-
-## 🛠️ Tecnologias Utilizadas
-
-- **React Native** - Framework mobile
-- **Expo** - Plataforma de desenvolvimento
-- **TypeScript** - Tipagem estática
-- **React Context API** - Gerenciamento de estado
-- **AsyncStorage** - Armazenamento local
-- **React Native DateTimePicker** - Seletor de data
-
-## 📝 Fluxo de Autenticação
-
-### Cadastro (3 seções)
-
-1. **Seção 1**: Informações pessoais (email, senha, nome, CPF, telefone, data de nascimento)
-2. **Seção 2**: Endereço (rua, cidade, estado, CEP)
-3. **Seção 3**: Natação (academia, estilos de nado)
-
-### Login
-
-1. Insira email e senha
-2. Sistema valida as credenciais
-3. Acessa a tela de perfil
-
-### Logout
-
-1. Clique em "Sair" na tela de perfil
-2. Confirme a ação
-3. Retorna à tela de login
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Este projeto usa armazenamento local com AsyncStorage. Para uma versao de producao, o ideal e integrar com um backend real para autenticacao, usuarios, academias, vinculo entre aluno e academia, treinos e ranking.

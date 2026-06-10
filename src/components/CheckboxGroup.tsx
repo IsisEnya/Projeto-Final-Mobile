@@ -63,16 +63,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#243047',
     marginBottom: 12,
   },
   optionsContainer: {
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#e3f2f8',
     overflow: 'hidden',
   },
   optionRow: {
@@ -87,15 +87,15 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: '#ddd',
-    borderRadius: 4,
+    borderColor: '#cfeafa',
+    borderRadius: 7,
     marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#43c7f4',
+    borderColor: '#43c7f4',
   },
   checkmark: {
     color: '#fff',
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 14,
-    color: '#333',
+    color: '#243047',
     flex: 1,
   },
   errorText: {
