@@ -23,6 +23,17 @@ export interface User {
 
 export type AccountType = 'student' | 'academy';
 
+export type AcademyStatus = 'active' | 'pending' | 'blocked';
+
+export type MembershipStatus = 'pending' | 'approved' | 'rejected' | 'removed';
+
+export type NotificationType =
+  | 'membership-requested'
+  | 'membership-approved'
+  | 'membership-rejected'
+  | 'membership-left'
+  | 'membership-removed';
+
 export type SwimmingModality =
   | 'recreational-pool'
   | 'competitive-pool'
@@ -95,6 +106,65 @@ export interface WorkoutRecord {
   createdAt: string;
 }
 
+export type RankingPeriod = 'week' | 'month' | 'year' | 'all';
+
+export type RankingModalityFilter = 'all' | WorkoutPlaceType;
+
+export type RankingStrokeFilter = 'all' | StrokeStyle;
+
+export type RankingAcademyFilter = 'all' | 'my-academy';
+
+export type RankingLocationFilter = 'all' | 'my-city' | 'my-state';
+
+export type RankingSortBy = 'distance' | 'arrivals' | 'time' | 'workouts' | 'stroke-diversity';
+
+export interface RankingFilters {
+  period: RankingPeriod;
+  modality: RankingModalityFilter;
+  stroke: RankingStrokeFilter;
+  academy: RankingAcademyFilter;
+  location: RankingLocationFilter;
+  sortBy: RankingSortBy;
+}
+
+export interface RankingEntry {
+  userId: string;
+  position: number;
+  name: string;
+  profilePhoto?: string;
+  city?: string;
+  state?: string;
+  academyName?: string;
+  academyId?: string;
+  distance: number;
+  arrivals: number;
+  timeMinutes: number;
+  workoutCount: number;
+  strokeDiversity: number;
+}
+
+export interface RankingResult {
+  entries: RankingEntry[];
+  total: number;
+  currentUserPosition?: number;
+  currentUserEntry?: RankingEntry;
+}
+
+export interface PublicUserProfile {
+  userId: string;
+  name: string;
+  profilePhoto?: string;
+  city?: string;
+  state?: string;
+  academyName?: string;
+  primaryModality?: SwimmingModality;
+  yearsPracticing?: string;
+  distance: number;
+  workoutCount: number;
+  favoriteStrokes: StrokeStyle[];
+  achievements: string[];
+}
+
 export interface AcademyProfile {
   id: string;
   name: string;
@@ -107,6 +177,46 @@ export interface AcademyProfile {
   teachers: string[];
   studentIds: string[];
   poolIds: string[];
+}
+
+export interface Academy {
+  id: string;
+  ownerUserId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  logo?: string;
+  description?: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  instagram?: string;
+  createdAt: string;
+  status: AcademyStatus;
+}
+
+export interface AcademyMembership {
+  id: string;
+  userId: string;
+  academyId: string;
+  status: MembershipStatus;
+  requestedAt: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+  removedAt?: string;
+}
+
+export interface AppNotification {
+  id: string;
+  recipientId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  relatedUserId?: string;
+  relatedAcademyId?: string;
 }
 
 export interface SignUpData {

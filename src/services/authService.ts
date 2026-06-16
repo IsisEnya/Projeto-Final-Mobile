@@ -6,6 +6,7 @@ import {
   TRAINING_PLACE_OPTIONS,
   User,
 } from '../types';
+import { academyService } from './academyService';
 import { validateEmail } from '../utils/validators';
 
 class AuthService {
@@ -112,6 +113,19 @@ class AuthService {
     await AsyncStorage.setItem(this.USERS_KEY, JSON.stringify(updatedUsers));
     await AsyncStorage.setItem(this.CURRENT_USER_KEY, JSON.stringify(newUser));
 
+    if (newUser.accountType === 'academy' && newUser.academyProfile) {
+      await academyService.createAcademy({
+        ownerUserId: newUser.id,
+        name: newUser.academyProfile.name,
+        email: newUser.email,
+        address: newUser.academyProfile.address,
+        city: newUser.academyProfile.city,
+        state: newUser.academyProfile.state,
+        instagram: newUser.academyProfile.instagram,
+        status: 'active',
+      });
+    }
+
     return newUser;
   }
 
@@ -136,6 +150,31 @@ class AuthService {
 
     await AsyncStorage.setItem(this.USERS_KEY, JSON.stringify(updatedUsers));
     await AsyncStorage.setItem(this.CURRENT_USER_KEY, JSON.stringify(updatedUser));
+
+    if (updatedUser.accountType === 'academy' && updatedUser.academyProfile) {
+      const academy = await academyService.getAcademyByOwner(updatedUser.id);
+      if (academy) {
+        await academyService.editAcademy(updatedUser.id, academy.id, {
+          name: updatedUser.academyProfile.name,
+          email: updatedUser.email,
+          address: updatedUser.academyProfile.address ?? '',
+          city: updatedUser.academyProfile.city,
+          state: updatedUser.academyProfile.state,
+          instagram: updatedUser.academyProfile.instagram,
+        });
+      } else {
+        await academyService.createAcademy({
+          ownerUserId: updatedUser.id,
+          name: updatedUser.academyProfile.name,
+          email: updatedUser.email,
+          address: updatedUser.academyProfile.address,
+          city: updatedUser.academyProfile.city,
+          state: updatedUser.academyProfile.state,
+          instagram: updatedUser.academyProfile.instagram,
+          status: 'active',
+        });
+      }
+    }
 
     return updatedUser;
   }
