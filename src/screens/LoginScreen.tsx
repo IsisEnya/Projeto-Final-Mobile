@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Button } from '../components/Button';
 import { InputField } from '../components/InputField';
+import { ToastMessage } from '../components/ToastMessage';
 import { useAuth } from '../contexts/AuthContext';
 
 export interface LoginScreenProps {
@@ -21,13 +22,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [toastError, setToastError] = useState<string | null>(null);
 
   useEffect(() => {
     if (error) {
-      Alert.alert('Erro de login', error);
+      setToastError(error);
       clearError();
     }
   }, [error, clearError]);
+
+  useEffect(() => {
+    if (!toastError) return;
+
+    const timer = setTimeout(() => setToastError(null), 3000);
+    return () => clearTimeout(timer);
+  }, [toastError]);
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -54,11 +63,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <ToastMessage message={toastError} type="error" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.hero}>
           <View style={styles.brandRow}>
             <View style={styles.brandMark}>
-              <Text style={styles.brandMarkText}>H</Text>
+              <Image source={require('../../assets/images/hydro-pump-logo.png')} style={styles.brandLogo} />
             </View>
             <Text style={styles.brandName}>Hydro Pump</Text>
           </View>
@@ -66,7 +76,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
           <View style={styles.waterOrbLarge} />
           <View style={styles.waterOrbSmall} />
           <View style={styles.dropBadge}>
-            <Text style={styles.dropIcon}>H</Text>
+            <Image source={require('../../assets/images/hydro-pump-logo.png')} style={styles.heroLogo} />
           </View>
 
           <Text style={styles.heroTitle}>Registre seus treinos de natação em um só lugar.</Text>
@@ -178,11 +188,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#fff',
   },
-  brandMarkText: {
-    color: '#32b9ed',
-    fontSize: 23,
-    fontWeight: '900',
-  },
+  brandLogo: { width: 30, height: 24, resizeMode: 'contain' },
   brandName: {
     color: '#243047',
     fontSize: 18,
@@ -220,11 +226,7 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 6,
   },
-  dropIcon: {
-    color: '#35bdf2',
-    fontSize: 44,
-    fontWeight: '900',
-  },
+  heroLogo: { width: 66, height: 52, resizeMode: 'contain' },
   heroTitle: {
     width: '74%',
     color: '#111827',

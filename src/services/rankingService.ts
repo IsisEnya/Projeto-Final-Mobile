@@ -69,7 +69,8 @@ class RankingService {
     const page = Math.max(pageOptions.page ?? 1, 1);
     const pageSize = Math.max(pageOptions.pageSize ?? DEFAULT_PAGE_SIZE, 1);
     const users = await this.getUsers();
-    const students = users.filter((user) => user.accountType === 'student');
+    const mergedUsers = users.some((user) => user.id === currentUser.id) ? users : [...users, currentUser];
+    const students = mergedUsers.filter((user) => user.accountType === 'student');
     const entries = await Promise.all(
       students
         .filter((student) => this.matchesUserFilters(student, currentUser, filters))
@@ -210,7 +211,47 @@ class RankingService {
 
   private async getWorkouts(userId: string): Promise<WorkoutRecord[]> {
     const workoutsJson = await AsyncStorage.getItem(`workout_sessions_${userId}`);
-    return workoutsJson ? JSON.parse(workoutsJson) : [];
+    const workouts = workoutsJson ? JSON.parse(workoutsJson) : [];
+    return workouts.map((workout: any) => this.normalizeWorkout(workout, userId));
+  }
+
+  private normalizeWorkout(workout: any, userId: string): WorkoutRecord {
+    if (Array.isArray(workout.exercises)) {
+      return {
+        ...workout,
+        userId: workout.userId ?? userId,
+        durationMinutes: Number(workout.durationMinutes ?? 0),
+        totalDistance: Number(workout.totalDistance ?? 0),
+      };
+    }
+
+    const legacyDistance = Number(workout.totalDistance ?? workout.distance ?? 0);
+    const legacyDate = workout.trainedAt ?? workout.date ?? workout.createdAt ?? new Date().toISOString();
+
+    return {
+      id: workout.id ?? `legacy-${legacyDate}`,
+      userId: workout.userId ?? userId,
+      name: workout.name ?? workout.placeName ?? 'Treino registrado',
+      date: legacyDate,
+      placeType: workout.placeType ?? 'pool',
+      poolName: workout.poolName ?? workout.placeName,
+      durationMinutes: Number(workout.durationMinutes ?? workout.timeMinutes ?? 0),
+      totalDistance: legacyDistance,
+      exercises: [
+        {
+          id: `${workout.id ?? legacyDate}-exercise`,
+          placeType: workout.placeType ?? 'pool',
+          strokeStyle: workout.strokeStyle,
+          accessory: workout.accessory,
+          arrivals: Number(workout.arrivals ?? workout.laps ?? 0),
+          poolLength: workout.poolLength,
+          distance: legacyDistance,
+          durationMinutes: workout.durationMinutes,
+          locationName: workout.poolName ?? workout.placeName,
+        },
+      ],
+      createdAt: workout.createdAt ?? legacyDate,
+    };
   }
 }
 

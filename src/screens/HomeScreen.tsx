@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   Image,
   Modal,
   ScrollView,
@@ -112,6 +111,40 @@ const formatDuration = (minutes: number) => {
   return `${hours}h${remainingMinutes.toString().padStart(2, '0')}`;
 };
 
+const getRankingPeriodStart = (period: RankingFilters['period']) => {
+  const now = new Date();
+  if (period === 'all') return null;
+  if (period === 'year') return new Date(now.getFullYear(), 0, 1);
+  if (period === 'month') return new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const weekStart = new Date(now);
+  const day = weekStart.getDay();
+  const daysSinceMonday = day === 0 ? 6 : day - 1;
+  weekStart.setDate(weekStart.getDate() - daysSinceMonday);
+  weekStart.setHours(0, 0, 0, 0);
+  return weekStart;
+};
+
+const getRankingMetric = (entry: RankingEntry, sortBy: RankingSortBy) => {
+  if (sortBy === 'arrivals') return entry.arrivals;
+  if (sortBy === 'time') return entry.timeMinutes;
+  if (sortBy === 'workouts') return entry.workoutCount;
+  if (sortBy === 'stroke-diversity') return entry.strokeDiversity;
+  return entry.distance;
+};
+
+const sortRankingEntries = (entries: RankingEntry[], sortBy: RankingSortBy) =>
+  [...entries]
+    .sort((a, b) => {
+      const metricDifference = getRankingMetric(b, sortBy) - getRankingMetric(a, sortBy);
+      if (metricDifference !== 0) return metricDifference;
+      if (b.distance !== a.distance) return b.distance - a.distance;
+      if (b.workoutCount !== a.workoutCount) return b.workoutCount - a.workoutCount;
+      if (b.timeMinutes !== a.timeMinutes) return b.timeMinutes - a.timeMinutes;
+      return a.name.localeCompare(b.name);
+    })
+    .map((entry, index) => ({ ...entry, position: index + 1 }));
+
 const getOptionLabel = <T extends string>(options: { value: T; label: string }[], value?: T) =>
   options.find((option) => option.value === value)?.label ?? 'Nao informado';
 
@@ -203,6 +236,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
   const [selectedPublicProfile, setSelectedPublicProfile] = useState<PublicUserProfile | null>(null);
   const [isPublicProfileOpen, setIsPublicProfileOpen] = useState(false);
   const [isRankingLoading, setIsRankingLoading] = useState(false);
+  const [isRankingFiltersOpen, setIsRankingFiltersOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({
     firstName: '',
     lastName: '',
@@ -273,6 +307,63 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
     }
   };
 
+  const buildCurrentUserRankingEntry = (): RankingEntry | null => {
+    if (!user || user.accountType !== 'student') return null;
+
+    const periodStart = getRankingPeriodStart(rankingFilters.period);
+    const strokeSet = new Set<StrokeStyle>();
+    let distance = 0;
+    let arrivalsTotal = 0;
+    let timeMinutes = 0;
+    let workoutCount = 0;
+
+    workouts.forEach((workout) => {
+      if (periodStart && new Date(workout.date).getTime() < periodStart.getTime()) return;
+
+      const exercises = workout.exercises.length > 0
+        ? workout.exercises
+        : [{
+            id: `${workout.id}-fallback`,
+            placeType: workout.placeType,
+            distance: workout.totalDistance,
+          }];
+
+      const matchingExercises = exercises.filter((exercise) => {
+        if (rankingFilters.modality !== 'all' && exercise.placeType !== rankingFilters.modality) return false;
+        if (rankingFilters.stroke !== 'all' && exercise.strokeStyle !== rankingFilters.stroke) return false;
+        return true;
+      });
+
+      if (matchingExercises.length === 0) return;
+
+      workoutCount += 1;
+      timeMinutes += workout.durationMinutes ?? 0;
+      matchingExercises.forEach((exercise) => {
+        distance += exercise.distance ?? 0;
+        arrivalsTotal += exercise.arrivals ?? 0;
+        if (exercise.strokeStyle) strokeSet.add(exercise.strokeStyle);
+      });
+    });
+
+    if (distance <= 0 && arrivalsTotal <= 0 && timeMinutes <= 0 && workoutCount <= 0) return null;
+
+    return {
+      userId: user.id,
+      position: 0,
+      name: displayName,
+      profilePhoto: user.profilePhoto,
+      city: user.city,
+      state: user.state,
+      academyName: user.academyName,
+      academyId: user.academyId,
+      distance,
+      arrivals: arrivalsTotal,
+      timeMinutes,
+      workoutCount,
+      strokeDiversity: strokeSet.size,
+    };
+  };
+
   useEffect(() => {
     const loadData = async () => {
       if (!user) return;
@@ -326,8 +417,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
     try {
       setIsRankingLoading(true);
       const result = await rankingService.listRanking(rankingFilters, user, { page: 1, pageSize: 50 });
-      setRankingEntries(result.entries);
-      setCurrentUserRank(result.currentUserEntry ?? null);
+      const localCurrentUserEntry = buildCurrentUserRankingEntry();
+      const mergedEntries = localCurrentUserEntry
+        ? [
+            localCurrentUserEntry,
+            ...result.entries.filter((entry) => entry.userId !== localCurrentUserEntry.userId),
+          ]
+        : result.entries;
+      const sortedEntries = sortRankingEntries(mergedEntries, rankingFilters.sortBy);
+      const currentEntry = sortedEntries.find((entry) => entry.userId === user.id) ?? null;
+
+      setRankingEntries(sortedEntries);
+      setCurrentUserRank(currentEntry);
     } catch (error) {
       showToast('Nao foi possivel carregar o ranking.', 'error');
     } finally {
@@ -665,7 +766,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
         <View style={styles.waveOne} />
         <View style={styles.waveTwo} />
         <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeText}>HP</Text>
+          <Image source={require('../../assets/images/hydro-pump-logo.png')} style={styles.heroLogoImage} />
         </View>
         <Text style={styles.heroTitle}>Hydro Pump</Text>
         <Text style={styles.heroSubtitle}>
@@ -959,9 +1060,71 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
     </Modal>
   );
 
+  const renderRankingFiltersModal = () => (
+    <Modal
+      visible={isRankingFiltersOpen}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setIsRankingFiltersOpen(false)}
+    >
+      <View style={styles.modalBackdrop}>
+        <TouchableOpacity style={styles.modalBackdropTouch} activeOpacity={1} onPress={() => setIsRankingFiltersOpen(false)} />
+        <View style={styles.modalCard}>
+          <View style={styles.modalHandle} />
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.modalEyebrow}>Ranking</Text>
+              <Text style={styles.cardTitle}>Filtros</Text>
+            </View>
+            <Button title="Fechar" onPress={() => setIsRankingFiltersOpen(false)} variant="secondary" size="small" />
+          </View>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Picker
+              label="Periodo"
+              options={rankingPeriodOptions}
+              value={rankingFilters.period}
+              onValueChange={(value) => updateRankingFilter('period', value as RankingFilters['period'])}
+            />
+            <Picker
+              label="Ordenar por"
+              options={rankingSortOptions}
+              value={rankingFilters.sortBy}
+              onValueChange={(value) => updateRankingFilter('sortBy', value as RankingSortBy)}
+            />
+            <Picker
+              label="Modalidade"
+              options={rankingModalityOptions}
+              value={rankingFilters.modality}
+              onValueChange={(value) => updateRankingFilter('modality', value as RankingFilters['modality'])}
+            />
+            <Picker
+              label="Estilo de nado"
+              options={rankingStrokeOptions}
+              value={rankingFilters.stroke}
+              onValueChange={(value) => updateRankingFilter('stroke', value as RankingFilters['stroke'])}
+            />
+            <Picker
+              label="Academia"
+              options={rankingAcademyOptions}
+              value={rankingFilters.academy}
+              onValueChange={(value) => updateRankingFilter('academy', value as RankingFilters['academy'])}
+            />
+            <Picker
+              label="Localizacao"
+              options={rankingLocationOptions}
+              value={rankingFilters.location}
+              onValueChange={(value) => updateRankingFilter('location', value as RankingFilters['location'])}
+            />
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+
   const renderRankingScreen = () => (
     <>
       {renderPublicProfileModal()}
+      {renderRankingFiltersModal()}
       <View style={styles.rankingHero}>
         <View>
           <Text style={styles.rankingHeroLabel}>Seu placar</Text>
@@ -979,44 +1142,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
         </View>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Filtros do ranking</Text>
-        <Picker
-          label="Periodo"
-          options={rankingPeriodOptions}
-          value={rankingFilters.period}
-          onValueChange={(value) => updateRankingFilter('period', value as RankingFilters['period'])}
-        />
-        <Picker
-          label="Ordenar por"
-          options={rankingSortOptions}
-          value={rankingFilters.sortBy}
-          onValueChange={(value) => updateRankingFilter('sortBy', value as RankingSortBy)}
-        />
-        <Picker
-          label="Modalidade"
-          options={rankingModalityOptions}
-          value={rankingFilters.modality}
-          onValueChange={(value) => updateRankingFilter('modality', value as RankingFilters['modality'])}
-        />
-        <Picker
-          label="Estilo de nado"
-          options={rankingStrokeOptions}
-          value={rankingFilters.stroke}
-          onValueChange={(value) => updateRankingFilter('stroke', value as RankingFilters['stroke'])}
-        />
-        <Picker
-          label="Academia"
-          options={rankingAcademyOptions}
-          value={rankingFilters.academy}
-          onValueChange={(value) => updateRankingFilter('academy', value as RankingFilters['academy'])}
-        />
-        <Picker
-          label="Localizacao"
-          options={rankingLocationOptions}
-          value={rankingFilters.location}
-          onValueChange={(value) => updateRankingFilter('location', value as RankingFilters['location'])}
-        />
+      <View style={styles.rankingFilterBar}>
+        <View style={styles.rankingFilterSummary}>
+          <Text style={styles.rankingFilterLabel}>Filtros ativos</Text>
+          <Text style={styles.rankingFilterText}>
+            {getOptionLabel(rankingPeriodOptions, rankingFilters.period)} - {getOptionLabel(rankingSortOptions, rankingFilters.sortBy)}
+          </Text>
+        </View>
+        <Button title="Filtros" onPress={() => setIsRankingFiltersOpen(true)} variant="secondary" size="small" />
       </View>
 
       <View style={styles.card}>
@@ -1551,6 +1684,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   heroBadgeText: { color: '#35bdf2', fontSize: 18, fontWeight: '900' },
+  heroLogoImage: { width: 38, height: 31, resizeMode: 'contain' },
   heroTitle: { color: '#111827', fontSize: 25, fontWeight: '900', marginBottom: 8 },
   heroSubtitle: { color: '#617b91', fontSize: 13, lineHeight: 20, width: '74%' },
   heroMetric: {
@@ -1617,11 +1751,30 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(17, 24, 39, 0.28)',
   },
+  modalBackdropTouch: {
+    flex: 1,
+  },
   modalCard: {
+    maxHeight: '84%',
     backgroundColor: '#fff',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 20,
+  },
+  modalHandle: {
+    alignSelf: 'center',
+    width: 46,
+    height: 5,
+    borderRadius: 99,
+    backgroundColor: '#d7effa',
+    marginBottom: 14,
+  },
+  modalEyebrow: {
+    color: '#7b91a5',
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: 3,
   },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   cardTitle: { fontSize: 18, fontWeight: '900', color: '#111827', marginBottom: 16 },
@@ -1686,6 +1839,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rankingHeroBadgeText: { color: '#fff', fontSize: 30, fontWeight: '900' },
+  rankingFilterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: 22,
+    padding: 14,
+    marginBottom: 18,
+    shadowColor: '#91c9e0',
+    shadowOpacity: 0.14,
+    shadowOffset: { width: 0, height: 12 },
+    shadowRadius: 20,
+    elevation: 4,
+  },
+  rankingFilterSummary: {
+    flex: 1,
+  },
+  rankingFilterLabel: {
+    color: '#7b91a5',
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  rankingFilterText: {
+    color: '#243047',
+    fontSize: 13,
+    fontWeight: '900',
+  },
   rankingCount: { color: '#7b91a5', fontSize: 12, fontWeight: '900' },
   rankingCard: {
     flexDirection: 'row',

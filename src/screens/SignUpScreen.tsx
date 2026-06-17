@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -13,6 +13,7 @@ import { Button } from '../components/Button';
 import { CheckboxGroup } from '../components/CheckboxGroup';
 import { InputField } from '../components/InputField';
 import { Picker } from '../components/Picker';
+import { ToastMessage } from '../components/ToastMessage';
 import { useAuth } from '../contexts/AuthContext';
 import {
   AccountType,
@@ -29,6 +30,7 @@ export interface SignUpScreenProps {
 export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin }) => {
   const { signUp, loading, error, clearError } = useAuth();
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [toastError, setToastError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     accountType: 'student' as AccountType,
@@ -50,10 +52,17 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin })
 
   useEffect(() => {
     if (error) {
-      Alert.alert('Erro ao cadastrar', error);
+      setToastError(error);
       clearError();
     }
   }, [error, clearError]);
+
+  useEffect(() => {
+    if (!toastError) return;
+
+    const timer = setTimeout(() => setToastError(null), 3000);
+    return () => clearTimeout(timer);
+  }, [toastError]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
@@ -130,10 +139,11 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin })
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <ToastMessage message={toastError} type="error" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <View style={styles.brandMark}>
-            <Text style={styles.brandMarkText}>H</Text>
+            <Image source={require('../../assets/images/hydro-pump-logo.png')} style={styles.brandLogo} />
           </View>
           <Text style={styles.title}>Criar conta Hydro Pump</Text>
           <Text style={styles.subtitle}>Escolha como você quer entrar no app.</Text>
@@ -351,11 +361,7 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 5,
   },
-  brandMarkText: {
-    color: '#35bdf2',
-    fontSize: 30,
-    fontWeight: '900',
-  },
+  brandLogo: { width: 42, height: 34, resizeMode: 'contain' },
   title: {
     fontSize: 25,
     fontWeight: '900',
